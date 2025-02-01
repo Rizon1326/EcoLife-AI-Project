@@ -1,5 +1,5 @@
-# app/services/health_service.py
 import os
+import re
 from typing import Optional
 from app.models.health_models import HealthRequest
 from groq import Groq  # Import Groq directly
@@ -10,7 +10,20 @@ os.environ["GROQ_API_KEY"] = "gsk_6zrVowNDiqru9q4Xp8ooWGdyb3FYDep7oxyNIl9BsuJaF8
 # Create the Groq client and set up the API key
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-# Function to interact with Groq for health-related queries (without endpoint)
+# Function to clean the Groq response by removing unnecessary parts (e.g., <think>)
+def clean_response(response_content: str) -> str:
+    # Remove <think> sections
+    response_content = re.sub(r'<think>.*?</think>', '', response_content, flags=re.DOTALL)
+    
+    # Convert markdown to HTML
+    response_content = re.sub(r'### (.*?)', r'<h3>\1</h3>', response_content)
+    response_content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', response_content)
+    response_content = re.sub(r'\* (.*?)(\n|$)', r'<li>\1</li>', response_content)
+    response_content = re.sub(r'(\n<li>.*?</li>)+', r'<ul>\g<0></ul>', response_content)
+    
+    return response_content
+
+# Function to interact with Groq for health-related queries
 def get_groq_response(query: str) -> dict:
     # Create a prompt using Groq without the need for an endpoint
     chat_completion = client.chat.completions.create(
@@ -20,36 +33,38 @@ def get_groq_response(query: str) -> dict:
 
     response_content = chat_completion.choices[0].message.content
 
+    # Clean the response
+    cleaned_response = clean_response(response_content)
+
     # Format the response in a smart, structured way
     structured_response = {
-        "food_suggestions": [],
-        "recommendations": [],
-        "alerts": [],
-        "additional_notes": ""
+        "food_suggestions": parse_suggestions(cleaned_response),
+        "recommendations": parse_recommendations(cleaned_response),
+        "alerts": parse_alerts(cleaned_response),
+        "additional_notes": extract_additional_info(cleaned_response)
     }
-
-    # Dynamically parse the response for suggestions and restrictions
-    structured_response["food_suggestions"] = parse_suggestions(response_content)
-    structured_response["recommendations"] = parse_recommendations(response_content)
-    structured_response["alerts"] = parse_alerts(response_content)
-    structured_response["additional_notes"] = extract_additional_info(response_content)
 
     return structured_response
 
 # Function to parse dynamic food suggestions from the response
 def parse_suggestions(response_content: str) -> list:
     suggestions = []
-    # Dynamically extracting food suggestions based on Groq's response
     if "suggest" in response_content.lower():
-        # In reality, you'd need a better parsing method, but for now, we'll simulate dynamic suggestions
         suggestions = response_content.split('\n')  # Assuming suggestions are separated by newline
+    
+    # Ensure the suggestions are clean and free from unwanted characters (like '#')
+    suggestions = [suggestion.strip().replace("#", "") for suggestion in suggestions if suggestion.strip()]
+    
     return suggestions
+
 
 # Function to parse dynamic health recommendations from the response
 def parse_recommendations(response_content: str) -> list:
     recommendations = []
     if "recommend" in response_content.lower():
         recommendations = response_content.split('\n')  # Assuming recommendations are separated by newline
+    # Shorten recommendations for clarity
+    recommendations = [recommendation.strip() for recommendation in recommendations if recommendation.strip()]
     return recommendations
 
 # Function to parse dynamic alert messages for food restrictions based on diseases
@@ -57,6 +72,8 @@ def parse_alerts(response_content: str) -> list:
     alerts = []
     if "alert" in response_content.lower():
         alerts = response_content.split('\n')  # Assuming alerts are separated by newline
+    # Shorten and clean alerts
+    alerts = [alert.strip() for alert in alerts if alert.strip()]
     return alerts
 
 # Function to extract additional information from the Groq response
@@ -100,39 +117,36 @@ def recommend_calories(data: HealthRequest) -> float:
 
 # Function to provide food suggestions based on disease and BMI
 def suggest_food(diseases: Optional[str], bmi: float) -> str:
-    # Construct a dynamic query to Groq
-    query = f"Suggest food for someone with the following disease(s): {diseases}. Also, give alerts for food restrictions related to the disease(s) and a person with a BMI of {bmi}."
+    query = f"""Suggest appropriate foods for someone with the following condition(s): {diseases}. Also, provide food restrictions based on the condition(s) and a BMI of {bmi}.Ensure the response is concise and systematic, with short, sharp sentences. Present the food recommendations in a neat and clear with nutrition details and portion sizes. """
     response = get_groq_response(query)
     return response
 
 # Function to provide food restrictions dynamically for any disease
 def food_restrictions(diseases: Optional[str]) -> str:
     if diseases:
-        query = f"Provide food restrictions for someone with the following disease(s): {diseases}."
+        query = f"Provide food restrictions for someone with the following disease(s): {diseases}. Just give me the food and their reasons . And every reason contains a short sentence. The sentences should be more smarter and short." 
         response = get_groq_response(query)
         return response['alerts']
     return "No food restrictions based on provided diseases."
 
 # Function to provide full health summary, including dynamic food suggestions and restrictions
 def full_health_summary(data: HealthRequest):
-    # Calculate BMI
     bmi = calculate_bmi(data.weight, data.height)
-    
-    # Recommend daily calorie intake
     calories = recommend_calories(data)
-    
-    # Get dynamic food suggestions based on diseases and BMI
     food_suggestion = suggest_food(data.diseases, bmi)
-    
-    # Get food restrictions dynamically based on diseases
     restrictions = food_restrictions(data.diseases)
     
+    # Return the formatted health summary
     return {
         "bmi": bmi,
         "recommended_calories": calories,
-        "food_suggestions": food_suggestion["food_suggestions"],
-        "recommendations": food_suggestion["recommendations"],
-        "alerts": food_suggestion["alerts"],
-        "food_restrictions": restrictions,
+        "food_suggestions": format_list(food_suggestion["food_suggestions"]),
+        "recommendations": format_list(food_suggestion["recommendations"]),
+        "alerts": format_list(food_suggestion["alerts"]),
+        "food_restrictions": format_list(restrictions),
         "additional_notes": food_suggestion["additional_notes"]
     }
+
+# Utility function to format a list for better display
+def format_list(items):
+    return [item.strip() for item in items if item.strip()]

@@ -1,18 +1,25 @@
-import React from "react";
-import WasteClassifier from "./components/WasteClassifier";
-import FoodAlternatives from "./components/FoodAlternatives";
-import FoodRecommendation from "./components/FoodRecommendation";
-import HealthSummary from "./components/HealthSummary";
+// import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import HomePage from './pages/HomePage';
+import ClassifyPage from './pages/ClassifyPage';
+import HealthPage from './pages/HealthPage';
+import FoodRecommendationPage from './pages/FoodRecommendationPage';
+import FoodAlternatesPage from './pages/FoodAlternatesPage';
+import './styles/style.css';  // External CSS file
 
 const App = () => {
   return (
-    <div>
-      <h1>Waste Management and Health Dashboard</h1>
-      <WasteClassifier />
-      <FoodAlternatives />
-      <FoodRecommendation />
-      <HealthSummary />
-    </div>
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/classify" element={<ClassifyPage />} />
+        <Route path="/health" element={<HealthPage />} />
+        <Route path="/food-recommendation" element={<FoodRecommendationPage />} />
+        <Route path="/food-alternatives" element={<FoodAlternatesPage />} />
+      </Routes>
+    </Router>
   );
 };
 

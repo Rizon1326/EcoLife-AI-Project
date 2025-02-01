@@ -1,7 +1,5 @@
-# app/routes/classify.py
 from fastapi import APIRouter, UploadFile, HTTPException
-from app.services.classify_service import classify_image
-from app.services.sdg_analyzer import analyze_waste
+from app.services.classify_service import classify_image  # Keep this import
 
 router = APIRouter(
     prefix="/classify",  # Prefix for all routes in this file
@@ -17,13 +15,9 @@ async def classify_waste(file: UploadFile):
     # Classify the waste based on the uploaded image
     waste_type, details = classify_image(file)
     
-    # Analyze the waste for SDG goals and recyclability
-    sdg_analysis = analyze_waste(waste_type)
-    
-    # Return a response containing the filename, waste type, details, and SDG analysis
+    # Return a response containing the filename, waste type, and details
     return {
         "filename": file.filename,
         "waste_type": waste_type,
-        "details": details,
-        "sdg_analysis": sdg_analysis
+        "details": details
     }
