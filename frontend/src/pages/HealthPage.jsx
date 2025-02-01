@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
-import './HealthPage.css';
+// import './HealthPage.css';
 import { marked } from 'marked';
 
 const HealthPage = () => {
