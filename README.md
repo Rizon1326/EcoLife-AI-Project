@@ -2,6 +2,7 @@
 
 To run the backend, use the following command:
 
-```bashuvicorn app.main:app --reload
+```bash
+uvicorn app.main:app --reload
 
 ```
