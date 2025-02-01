@@ -6,7 +6,7 @@ const HomePage = () => {
       {/* Hero Section */}
       <div className="text-center mb-12 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-8">
         <h1 className="text-4xl font-bold text-gray-800 mb-4">
-          Welcome to the Waste Classification and Health API
+          Welcome to the EcoLifeAI
         </h1>
         <p className="text-lg text-gray-600">
           This platform provides tools for waste classification, food recommendations, and health advice.

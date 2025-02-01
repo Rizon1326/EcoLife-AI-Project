@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { marked } from 'marked';
+import { 
+  User, 
+  Ruler, 
+  Scale, 
+  Activity, 
+  Heart, 
+  FileText, 
+  Calendar,
+  Loader2, 
+  AlertCircle,
+  ChevronRight
+} from 'lucide-react';
 
 const HealthPage = () => {
   const [age, setAge] = useState('');
@@ -14,6 +26,7 @@ const HealthPage = () => {
   const [period, setPeriod] = useState(false);
   const [healthSummary, setHealthSummary] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const sanitizeResponse = (text) => {
     if (typeof text === 'string') {
@@ -37,6 +50,9 @@ const HealthPage = () => {
       setErrorMessage('Please fill in all required fields.');
       return;
     }
+
+    setLoading(true);
+    setErrorMessage('');
 
     const healthData = {
       age,
@@ -65,192 +81,263 @@ const HealthPage = () => {
       sanitizedData.additional_notes = convertMarkdownToHTML(sanitizedData.additional_notes);
 
       setHealthSummary(sanitizedData);
-      setErrorMessage('');
     } catch (error) {
       console.error('Error fetching health summary:', error.response || error);
       setErrorMessage('Failed to fetch health summary. Please try again later.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const InputField = ({ icon: Icon, label, required, ...props }) => (
+    <div className="relative">
+      <label className="text-sm font-medium text-gray-700 block mb-2">
+        {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </label>
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Icon className="h-5 w-5 text-gray-400" />
+        </div>
+        <input
+          {...props}
+          className="block w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200 
+            focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            transition-all duration-200 ease-in-out
+            placeholder:text-gray-400"
+        />
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl mb-2">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
             Health Insights Dashboard
           </h2>
-          <p className="text-lg text-gray-600">Track and monitor your health metrics</p>
+          <p className="text-lg text-gray-600">
+            Get personalized health recommendations based on your profile
+          </p>
         </div>
-  
+
+        {/* Error Message */}
         {errorMessage && (
-          <div className="mb-6 flex items-center p-4 border-l-4 border-red-500 bg-red-50 rounded-r-lg">
-            <svg className="w-5 h-5 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
+          <div className="mb-8 flex items-center p-4 bg-red-50 rounded-xl border-l-4 border-red-500 animate-slideIn">
+            <AlertCircle className="w-5 h-5 text-red-500 mr-3" />
             <p className="text-red-800">{errorMessage}</p>
           </div>
         )}
-  
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+
+        {/* Main Form Card */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
           <div className="px-6 py-8 sm:p-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left Column */}
               <div className="space-y-6">
-                <div className="relative">
-                  <label className="text-sm font-medium text-gray-700 block mb-2">
-                    Age<span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={age}
-                    onChange={(e) => setAge(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
-                    placeholder="Enter your age"
-                  />
-                </div>
-  
-                <div className="relative">
-                  <label className="text-sm font-medium text-gray-700 block mb-2">
-                    Height (cm)<span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={height}
-                    onChange={(e) => setHeight(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
-                    placeholder="Enter your height"
-                  />
-                </div>
-  
-                <div className="relative">
-                  <label className="text-sm font-medium text-gray-700 block mb-2">
-                    Weight (kg)<span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
-                    placeholder="Enter your weight"
-                  />
-                </div>
+                <InputField
+                  icon={User}
+                  label="Age"
+                  required
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="Enter your age"
+                />
+
+                <InputField
+                  icon={Ruler}
+                  label="Height (cm)"
+                  required
+                  type="number"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  placeholder="Enter your height"
+                />
+
+                <InputField
+                  icon={Scale}
+                  label="Weight (kg)"
+                  required
+                  type="number"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  placeholder="Enter your weight"
+                />
               </div>
-  
+
               {/* Right Column */}
               <div className="space-y-6">
                 <div className="relative">
                   <label className="text-sm font-medium text-gray-700 block mb-2">
                     Gender
                   </label>
-                  <select
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
-                  >
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <select
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      className="block w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200
+                        focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                        transition-all duration-200 ease-in-out
+                        appearance-none bg-white"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <ChevronRight className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
                 </div>
-  
-                <div className="relative">
-                  <label className="text-sm font-medium text-gray-700 block mb-2">
-                    Blood Pressure
-                  </label>
-                  <input
-                    type="text"
-                    value={bloodPressure}
-                    onChange={(e) => setBloodPressure(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
-                    placeholder="e.g., 120/80"
-                  />
-                </div>
-  
-                <div className="relative">
-                  <label className="text-sm font-medium text-gray-700 block mb-2">
-                    Medical Conditions
-                  </label>
-                  <input
-                    type="text"
-                    value={diseases}
-                    onChange={(e) => setDiseases(e.target.value)}
-                    className="block w-full px-4 py-3 rounded-lg border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
-                    placeholder="List any medical conditions"
-                  />
-                </div>
+
+                <InputField
+                  icon={Heart}
+                  label="Blood Pressure"
+                  type="text"
+                  value={bloodPressure}
+                  onChange={(e) => setBloodPressure(e.target.value)}
+                  placeholder="e.g., 120/80"
+                />
+
+                <InputField
+                  icon={FileText}
+                  label="Medical Conditions"
+                  type="text"
+                  value={diseases}
+                  onChange={(e) => setDiseases(e.target.value)}
+                  placeholder="List any medical conditions"
+                />
               </div>
             </div>
-  
+
+            {/* Daily Activities */}
             <div className="mt-8">
               <label className="text-sm font-medium text-gray-700 block mb-2">
                 Daily Activities<span className="text-red-500">*</span>
               </label>
-              <textarea
-                value={dailyActivities}
-                onChange={(e) => setDailyActivities(e.target.value)}
-                rows={3}
-                className="block w-full px-4 py-3 rounded-lg border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow duration-200"
-                placeholder="Describe your typical daily activities"
-              />
+              <div className="relative">
+                <div className="absolute top-3 left-3">
+                  <Activity className="h-5 w-5 text-gray-400" />
+                </div>
+                <textarea
+                  value={dailyActivities}
+                  onChange={(e) => setDailyActivities(e.target.value)}
+                  rows={3}
+                  className="block w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-200
+                    focus:ring-2 focus:ring-blue-500 focus:border-transparent
+                    transition-all duration-200 ease-in-out
+                    resize-none"
+                  placeholder="Describe your typical daily activities"
+                />
+              </div>
             </div>
-  
+
+            {/* Female-specific Options */}
             {gender === 'female' && (
               <div className="mt-8 space-y-4">
-                <div className="flex items-center space-x-3 bg-purple-50 p-4 rounded-lg">
+                <div className="flex items-center space-x-3 bg-purple-50 p-4 rounded-xl hover:bg-purple-100 transition-colors duration-200">
                   <input
                     type="checkbox"
                     checked={pregnancy}
                     onChange={(e) => setPregnancy(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-5 h-5 text-purple-600 border-gray-300 rounded-lg
+                      focus:ring-purple-500 cursor-pointer"
                   />
-                  <label className="text-sm font-medium text-gray-700">Currently Pregnant</label>
+                  <label className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Currently Pregnant
+                  </label>
                 </div>
-  
-                <div className="flex items-center space-x-3 bg-purple-50 p-4 rounded-lg">
+
+                <div className="flex items-center space-x-3 bg-purple-50 p-4 rounded-xl hover:bg-purple-100 transition-colors duration-200">
                   <input
                     type="checkbox"
                     checked={period}
                     onChange={(e) => setPeriod(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="w-5 h-5 text-purple-600 border-gray-300 rounded-lg
+                      focus:ring-purple-500 cursor-pointer"
                   />
-                  <label className="text-sm font-medium text-gray-700">Currently Menstruating</label>
+                  <label className="text-sm font-medium text-gray-700 cursor-pointer">
+                    Currently Menstruating
+                  </label>
                 </div>
               </div>
             )}
-  
+
+            {/* Submit Button */}
             <div className="mt-8">
               <button
                 onClick={handleSubmit}
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transform transition-all duration-200 hover:scale-[1.02]"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white 
+                  py-4 px-6 rounded-xl text-lg font-semibold
+                  hover:from-blue-700 hover:to-indigo-700 
+                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 
+                  transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]
+                  disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+                  flex items-center justify-center space-x-2"
               >
-                Generate Health Insights
+                {loading ? (
+                  <>
+                    <Loader2 className="animate-spin h-5 w-5" />
+                    <span>Generating Insights...</span>
+                  </>
+                ) : (
+                  <>
+                    <Activity className="h-5 w-5" />
+                    <span>Generate Health Insights</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
-  
+
+        {/* Health Summary */}
         {healthSummary && (
-          <div className="mt-10 bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="mt-10 bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl animate-fadeIn">
             <div className="px-6 py-8 sm:p-10">
-              <h3 className="text-2xl font-bold text-gray-900 mb-8">Your Health Summary</h3>
-              
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-8">
+                Your Health Summary
+              </h3>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
-                  <p className="text-sm font-medium text-blue-800 mb-1">Body Mass Index (BMI)</p>
-                  <p className="text-3xl font-bold text-blue-900">{healthSummary.bmi}</p>
+                {/* BMI Card */}
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 transform transition-all duration-300 hover:scale-105">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <Scale className="h-6 w-6 text-blue-600" />
+                    <p className="text-sm font-medium text-blue-800">Body Mass Index (BMI)</p>
+                  </div>
+                  <p className="text-3xl font-bold text-blue-900">
+                    {healthSummary.bmi} ({healthSummary.bmi_category})
+                  </p>
+                  <p className="text-sm text-gray-600">Your BMI category: {healthSummary.bmi_category}</p>
                 </div>
-                
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6">
-                  <p className="text-sm font-medium text-green-800 mb-1">Recommended Daily Calories</p>
+
+                {/* Calories Card */}
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 transform transition-all duration-300 hover:scale-105">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <Activity className="h-6 w-6 text-green-600" />
+                    <p className="text-sm font-medium text-green-800">Recommended Daily Calories</p>
+                  </div>
                   <p className="text-3xl font-bold text-green-900">{healthSummary.recommended_calories}</p>
                 </div>
               </div>
-  
+
+              {/* Recommendations */}
               <div className="space-y-8">
                 <div>
-                  <h4 className="text-xl font-semibold text-gray-900 mb-4">Health Recommendations</h4>
+                  <h4 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <FileText className="h-5 w-5 mr-2 text-indigo-600" />
+                    Health Recommendations
+                  </h4>
                   <div 
                     dangerouslySetInnerHTML={{ __html: healthSummary.recommendations }}
-                    className="prose max-w-none bg-gray-50 rounded-xl p-6"
+                    className="prose max-w-none bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors duration-200"
                   />
                 </div>
               </div>

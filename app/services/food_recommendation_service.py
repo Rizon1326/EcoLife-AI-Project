@@ -1,7 +1,7 @@
-# app/services/food_recommendation_service.py
 import os
 from groq import Groq
 from app.models.food_recommendation_models import FoodRecommendationRequest
+import re
 
 # Set your Groq API key
 os.environ["GROQ_API_KEY"] = "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"  # Replace with your actual Groq API key
@@ -9,14 +9,17 @@ os.environ["GROQ_API_KEY"] = "gsk_6zrVowNDiqru9q4Xp8ooWGdyb3FYDep7oxyNIl9BsuJaF8
 # Create the Groq client and set up the API key
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-# Function to interact with Groq for food recommendations based on diseases, BMI, and specific food
+
 def get_food_recommendations(query: str) -> dict:
     chat_completion = client.chat.completions.create(
         messages=[{"role": "user", "content": query}],
-        model="deepseek-r1-distill-llama-70b",  # Use the model you want to run
+        model="deepseek-r1-distill-llama-70b",
     )
 
     response_content = chat_completion.choices[0].message.content
+
+    # Clean the response content
+    response_content = clean_response(response_content)
 
     # Format the response in a structured way
     structured_response = {
@@ -37,6 +40,14 @@ def get_food_recommendations(query: str) -> dict:
     structured_response["specific_food_intake"] = get_specific_food_intake(response_content)
 
     return structured_response
+
+def clean_response(response_content: str) -> str:
+    # Remove <think> tags and their content
+    cleaned_content = re.sub(r'<think>.*?</think>', '', response_content, flags=re.DOTALL)
+    # Optionally, remove unnecessary line breaks or excessive whitespace
+    cleaned_content = " ".join(cleaned_content.splitlines()).strip()
+    return cleaned_content
+
 
 # Function to parse dynamic food suggestions
 def parse_suggestions(response_content: str) -> list:
@@ -69,7 +80,6 @@ def get_specific_food_intake(response_content: str) -> dict:
     
     # Example response format, assuming we can extract the intake information
     if "specific food" in response_content.lower():
-        # Assuming that Groq's response has intake recommendations like daily/weekly quantities for specific food
         lines = response_content.split('\n')
         for line in lines:
             if "intake" in line.lower():  # Look for intake info

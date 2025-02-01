@@ -10,6 +10,7 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 def clean_response(response_content: str) -> str:
     response_content = re.sub(r'<think>.*?</think>', '', response_content, flags=re.DOTALL)
+    response_content = response_content.replace("#", "").strip()
     response_content = re.sub(r'### (.*?)', r'<h3>\1</h3>', response_content)
     response_content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', response_content)
     response_content = re.sub(r'\* (.*?)(\n|$)', r'<li>\1</li>', response_content)
@@ -55,10 +56,22 @@ def parse_alerts(response_content: str) -> list:
 def extract_additional_info(response_content: str) -> str:
     return "Consult with your healthcare provider for personalized dietary recommendations."
 
-def calculate_bmi(weight: float, height: float) -> float:
+def calculate_bmi(weight: float, height: float) -> tuple:
     height_m = height / 100
     bmi = weight / (height_m ** 2)
-    return round(bmi, 2)
+    bmi_category = ""
+
+    if bmi < 18.5:
+        bmi_category = "Underweight"
+    elif 18.5 <= bmi <= 24.9:
+        bmi_category = "Normal weight"
+    elif 25 <= bmi <= 29.9:
+        bmi_category = "Overweight"
+    else:
+        bmi_category = "Obesity"
+
+    return round(bmi, 2), bmi_category  # Returning both BMI and its category
+
 
 def calculate_energy_loss(age: int, weight: float, height: float, gender: str, pregnancy: Optional[bool], period: Optional[bool], activity_level: str) -> float:
     if gender == 'male':
@@ -94,12 +107,14 @@ def food_restrictions(diseases: Optional[str]) -> str:
     return "No food restrictions based on provided diseases."
 
 def full_health_summary(data: HealthRequest):
-    bmi = calculate_bmi(data.weight, data.height)
+    bmi, bmi_category = calculate_bmi(data.weight, data.height)  # Getting BMI and its category
     calories = recommend_calories(data)
     food_suggestion = suggest_food(data.diseases, bmi)
     restrictions = food_restrictions(data.diseases)
+    
     return {
         "bmi": bmi,
+        "bmi_category": bmi_category,  # Adding BMI category to the response
         "recommended_calories": calories,
         "food_suggestions": format_list(food_suggestion["food_suggestions"]),
         "recommendations": format_list(food_suggestion["recommendations"]),
@@ -107,6 +122,7 @@ def full_health_summary(data: HealthRequest):
         "food_restrictions": format_list(restrictions),
         "additional_notes": food_suggestion["additional_notes"]
     }
+
 
 def format_list(items):
     return [item.strip() for item in items if item.strip()]
