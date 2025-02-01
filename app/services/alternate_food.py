@@ -11,7 +11,7 @@ GEMINI_API_KEY = "AIzaSyCRJWPgakOG1RMCU7m9Q3UvnRuhBn9LyCA"  # Replace with your 
 # Setup function for Gemini API
 def setup_gemini():
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     return model
 
 # Function to get nutritional alternatives using the Gemini API

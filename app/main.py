@@ -8,6 +8,7 @@ from app.routes.health import router as health_router  # Import new health route
 from app.routes.food_recommendation import router as food_recommendation_router  # Import new food recommendation routes
 from app.routes.food_alternates import router as food_alternates_router  # Import new route for food alternatives
 import google.generativeai as genai
+# from app.routes.chat_route import router as chat_router
 
 app = FastAPI(
     title="Waste Classification and Health API",
@@ -30,6 +31,7 @@ app.include_router(classify_router)  # Include waste classification routes
 app.include_router(health_router)    # Include health-related routes
 app.include_router(food_recommendation_router)  # Include food recommendation routes
 app.include_router(food_alternates_router)  # Include the new food alternatives router
+# app.include_router(chat_router)
 
 # Root endpoint (handles GET /)
 @app.get("/")
