@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import './HealthPage.css';
+import { marked } from 'marked';
 
 const HealthPage = () => {
   const [age, setAge] = useState('');
@@ -15,15 +16,28 @@ const HealthPage = () => {
   const [healthSummary, setHealthSummary] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // Function to sanitize unwanted characters
   const sanitizeResponse = (text) => {
-    // Ensure the value is a string before applying the replace function
     if (typeof text === 'string') {
-      // Remove unwanted special characters like # and -- 
-      return text.replace(/[#-]+/g, '').trim();
+      // Remove unwanted special characters like #, --, etc.
+      let sanitizedText = text.replace(/[#-]+/g, '').trim();
+      return sanitizedText;
     }
-    return text;  // Return the original value if it's not a string
+    return text;
   };
-  
+
+  // Function to convert markdown to HTML
+  const convertMarkdownToHTML = (markdownText) => {
+    // Ensure it's a string before passing to marked
+    if (typeof markdownText === 'string') {
+      return marked.parse(markdownText);
+    } else if (Array.isArray(markdownText)) {
+      // If it's an array, join it into a single string
+      return marked.parse(markdownText.join('\n'));
+    }
+    return ''; // Return empty string if it's neither a string nor an array
+  };
+
   const handleSubmit = async () => {
     // Validate input
     if (!age || !height || !weight || !dailyActivities) {
@@ -47,13 +61,18 @@ const HealthPage = () => {
       // Make POST request to the backend
       const response = await axios.post('http://localhost:8000/health/health_summary', healthData);
 
-      // Sanitize the backend response
+      // Sanitize the backend response and convert markdown to HTML
       const sanitizedData = {
         ...response.data,
         food_suggestions: sanitizeResponse(response.data.food_suggestions),
         recommendations: sanitizeResponse(response.data.recommendations),
         additional_notes: sanitizeResponse(response.data.additional_notes),
       };
+
+      // Convert Markdown to HTML if it's a valid string or array
+      sanitizedData.food_suggestions = convertMarkdownToHTML(sanitizedData.food_suggestions);
+      sanitizedData.recommendations = convertMarkdownToHTML(sanitizedData.recommendations);
+      sanitizedData.additional_notes = convertMarkdownToHTML(sanitizedData.additional_notes);
 
       setHealthSummary(sanitizedData);
       setErrorMessage('');  // Clear any previous error messages
@@ -179,7 +198,7 @@ const HealthPage = () => {
             <div dangerouslySetInnerHTML={{ __html: healthSummary.recommendations }} />
           </div>
 
-          <p><strong>Additional Notes:</strong> {healthSummary.additional_notes}</p>
+          {/* <p><strong>Additional Notes:</strong> {healthSummary.additional_notes}</p> */}
         </div>
       )}
     </div>
