@@ -1,3 +1,4 @@
+# app/routes/food_recommendation.py
 from fastapi import APIRouter
 from app.models.food_recommendation_models import FoodRecommendationRequest  # Import the food recommendation model
 from app.services.food_recommendation_service import get_food_recommendations  # Import the service

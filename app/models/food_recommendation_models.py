@@ -1,3 +1,4 @@
+# app/models/food_recommendation_models.py
 from pydantic import BaseModel
 from typing import Optional
 
