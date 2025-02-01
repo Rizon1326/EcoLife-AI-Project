@@ -15,6 +15,15 @@ const HealthPage = () => {
   const [healthSummary, setHealthSummary] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const sanitizeResponse = (text) => {
+    // Ensure the value is a string before applying the replace function
+    if (typeof text === 'string') {
+      // Remove unwanted special characters like # and -- 
+      return text.replace(/[#-]+/g, '').trim();
+    }
+    return text;  // Return the original value if it's not a string
+  };
+  
   const handleSubmit = async () => {
     // Validate input
     if (!age || !height || !weight || !dailyActivities) {
@@ -37,7 +46,16 @@ const HealthPage = () => {
     try {
       // Make POST request to the backend
       const response = await axios.post('http://localhost:8000/health/health_summary', healthData);
-      setHealthSummary(response.data);
+
+      // Sanitize the backend response
+      const sanitizedData = {
+        ...response.data,
+        food_suggestions: sanitizeResponse(response.data.food_suggestions),
+        recommendations: sanitizeResponse(response.data.recommendations),
+        additional_notes: sanitizeResponse(response.data.additional_notes),
+      };
+
+      setHealthSummary(sanitizedData);
       setErrorMessage('');  // Clear any previous error messages
     } catch (error) {
       console.error('Error fetching health summary:', error.response || error);
@@ -146,29 +164,24 @@ const HealthPage = () => {
       </div>
 
       {healthSummary && (
-  <div className="health-summary">
-    <h3>Health Summary</h3>
-    <p><strong>BMI:</strong> {healthSummary.bmi}</p>
-    <p><strong>Recommended Daily Calories:</strong> {healthSummary.recommended_calories}</p>
+        <div className="health-summary">
+          <h3>Health Summary</h3>
+          <p><strong>BMI:</strong> {healthSummary.bmi}</p>
+          <p><strong>Recommended Daily Calories:</strong> {healthSummary.recommended_calories}</p>
 
-    <div>
-      <strong>Food Suggestions:</strong>
-      <div dangerouslySetInnerHTML={{ __html: healthSummary.food_suggestions }} />
-    </div>
+          <div>
+            <strong>Food Suggestions:</strong>
+            <div dangerouslySetInnerHTML={{ __html: healthSummary.food_suggestions }} />
+          </div>
 
-    {/* <div>
-      <strong>Food Restrictions:</strong>
-      <div dangerouslySetInnerHTML={{ __html: healthSummary.food_restrictions }} />
-    </div> */}
+          <div>
+            <strong>Recommendations:</strong>
+            <div dangerouslySetInnerHTML={{ __html: healthSummary.recommendations }} />
+          </div>
 
-    <div>
-      <strong>Recommendations:</strong>
-      <div dangerouslySetInnerHTML={{ __html: healthSummary.recommendations }} />
-    </div>
-
-    <p><strong>Additional Notes:</strong> {healthSummary.additional_notes}</p>
-  </div>
-)}
+          <p><strong>Additional Notes:</strong> {healthSummary.additional_notes}</p>
+        </div>
+      )}
     </div>
   );
 };

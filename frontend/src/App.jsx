@@ -6,7 +6,7 @@ import ClassifyPage from './pages/ClassifyPage';
 import HealthPage from './pages/HealthPage';
 import FoodRecommendationPage from './pages/FoodRecommendationPage';
 import FoodAlternatesPage from './pages/FoodAlternatesPage';
-import './styles/style.css';  // External CSS file
+// import './styles/style.css';  // External CSS file
 
 const App = () => {
   return (
