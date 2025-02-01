@@ -23,6 +23,8 @@ const FoodRecommendationPage = () => {
     return true;
   };
 
+  
+
   const fetchRecommendations = async () => {
     if (!validateInputs()) return;
 

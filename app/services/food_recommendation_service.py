@@ -10,6 +10,20 @@ os.environ["GROQ_API_KEY"] = "gsk_6zrVowNDiqru9q4Xp8ooWGdyb3FYDep7oxyNIl9BsuJaF8
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 
+def clean_response_content(response_content: str) -> str:
+    """
+    Function to remove unwanted '####' and <think> tags with their content.
+    """
+    # Remove all <think> tags and their content
+    cleaned_content = re.sub(r'<think>.*?</think>', '', response_content, flags=re.DOTALL)
+    
+    # Also remove '####' if needed
+    cleaned_content = cleaned_content.replace('####', '')  # Remove '####' from the response
+    
+    return cleaned_content
+
+
+
 def get_food_recommendations(query: str) -> dict:
     chat_completion = client.chat.completions.create(
         messages=[{"role": "user", "content": query}],
@@ -18,8 +32,8 @@ def get_food_recommendations(query: str) -> dict:
 
     response_content = chat_completion.choices[0].message.content
 
-    # Clean the response content
-    response_content = clean_response(response_content)
+    # Clean the response content to remove '####'
+    response_content = clean_response_content(response_content)
 
     # Format the response in a structured way
     structured_response = {
@@ -47,7 +61,6 @@ def clean_response(response_content: str) -> str:
     # Optionally, remove unnecessary line breaks or excessive whitespace
     cleaned_content = " ".join(cleaned_content.splitlines()).strip()
     return cleaned_content
-
 
 # Function to parse dynamic food suggestions
 def parse_suggestions(response_content: str) -> list:
