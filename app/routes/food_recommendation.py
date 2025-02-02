@@ -11,11 +11,14 @@ router = APIRouter(
 @router.post("/")
 async def recommend_food(data: FoodRecommendationRequest):
     # Construct a query for Groq based on the user's diseases, BMI, and specific food
-    query = f"Suggest food for someone with the following disease(s): {data.diseases}. Also, give alerts for food restrictions related to the disease(s) and a person with a BMI of {data.bmi}."
-    
+    query = f"Suggest optimal food choices for a person with the following disease(s): {data.diseases}. For each food, please: 1. Recommend the appropriate portion size to support health for this condition.2. Explain how the food benefits the body, especially in relation to the listed diseases.      3. Provide detailed nutritional values for each food item. Finally, suggest a daily or weekly routine for the intake of these foods to ensure consistent health benefits while preventing the progression of the condition.  Please make sure the recommendations are:  - Smart and precise with nutritional values included.- Separate food recommendations from dietary restrictions and routines."
     if data.specific_food:
-        query += f" Include recommendations for {data.specific_food} consumption. What should be the daily and weekly intake for this food?"
-
+       query += f"""Include recommendations for {data.specific_food} consumption:
+               1. Ideal portion size per meal and recommended daily intake.
+               2. Suggested weekly intake for balanced health.
+               3. How {data.specific_food} benefits overall health considering the disease(s) and BMI.
+               4. Any adjustments or restrictions based on health condition."""
+      
     # Get food recommendations from the service
     food_recommendations = get_food_recommendations(query)
     
